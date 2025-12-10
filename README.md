@@ -24,6 +24,16 @@ npm start
 ```
 Server runs on `http://localhost:3000` by default.
 
+4. Expose your local server to the internet using a tunneling service like Ngrok or LocalTunnel:
+```
+# For Ngrok
+ngrok http 3000
+
+# For LocalTunnel
+lt --port 3000
+```
+Copy the url to n8n http request node for sending message, for e.g. https://thin-socks-follow.loca.lt is the localtunnel url, https://thin-socks-follow.loca.lt/webhook is the url to receive message from n8n.
+
 ## Endpoints
 
 - `POST /send` → send outbound message to n8n webhook
