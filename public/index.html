@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mock WhatsApp Bot UI</title>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; margin: 20px; }
+    h1 { font-size: 20px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .card { border: 1px solid #ddd; border-radius: 8px; padding: 12px; }
+    label { display: block; margin: 6px 0 2px; font-weight: 600; }
+    input, textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; }
+    button { padding: 8px 12px; border: 1px solid #333; border-radius: 6px; background: #fff; cursor: pointer; }
+    ul { list-style: none; padding: 0; }
+    li { padding: 8px; border-bottom: 1px solid #eee; }
+    .small { font-size: 12px; color: #666; }
+    .status { margin-top: 8px; font-size: 13px; }
+    .ok { color: #0a7; }
+    .err { color: #c00; }
+  </style>
+</head>
+<body>
+  <h1>Mock WhatsApp Bot UI</h1>
+  <div class="grid">
+    <div class="card">
+      <h2>Send to n8n</h2>
+      <label>Recipient ID</label>
+      <input id="to" placeholder="recipient id / phone" />
+      <label>Message</label>
+      <textarea id="text" rows="3" placeholder="message text"></textarea>
+      <label>File</label>
+      <input id="file" type="file" />
+      <button id="sendBtn">Send</button>
+      <div id="sendStatus" class="status"></div>
+    </div>
+
+    <div class="card">
+      <h2>Inbound messages</h2>
+      <button id="refreshBtn">Refresh</button>
+      <ul id="messages"></ul>
+    </div>
+  </div>
+
+  <script>
+    const sendBtn = document.getElementById('sendBtn');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const toEl = document.getElementById('to');
+    const textEl = document.getElementById('text');
+    const fileEl = document.getElementById('file');
+    const statusEl = document.getElementById('sendStatus');
+    const messagesEl = document.getElementById('messages');
+
+    async function sendMessage() {
+      statusEl.textContent = '';
+      const formData = new FormData();
+      formData.append('to', toEl.value);
+      formData.append('text', textEl.value);
+      if (fileEl.files[0]) {
+        formData.append('file', fileEl.files[0]);
+      }
+      try {
+        const res = await fetch('/send', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        statusEl.textContent = data.ok ? 'Sent ✓' : ('Error: ' + (data.error || 'unknown'));
+        statusEl.className = 'status ' + (data.ok ? 'ok' : 'err');
+      } catch (e) {
+        statusEl.textContent = 'Network error: ' + e.message;
+        statusEl.className = 'status err';
+      }
+    }
+
+    async function loadMessages() {
+      messagesEl.innerHTML = '';
+      try {
+        const res = await fetch('/messages');
+        const data = await res.json();
+        const items = (data && data.items) || [];
+        for (const m of items) {
+          const li = document.createElement('li');
+          li.innerHTML = `<div><strong>From:</strong> ${m.from} <span class="small">${m.at}</span></div>
+                          <div>${m.text || ''}</div>
+                          ${m.file ? `<div class="small">File: ${m.file.filename}</div>` : ''}
+                          <div class="small">meta: ${JSON.stringify(m.meta)}</div>`;
+          messagesEl.appendChild(li);
+        }
+      } catch (e) {
+        const li = document.createElement('li');
+        li.textContent = 'Failed to load messages: ' + e.message;
+        li.style.color = '#c00';
+        messagesEl.appendChild(li);
+      }
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    refreshBtn.addEventListener('click', loadMessages);
+    // auto-refresh every 5s
+    setInterval(loadMessages, 5000);
+    loadMessages();
+  </script>
+</body>
+</html>
