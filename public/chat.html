@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+            border: 1px solid #ccc;
+        }
+
+        .chat-header {
+            background-color: #007bff;
+            color: white;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .chat-history {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+
+        .chat-message {
+            margin: 5px 0;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .chat-message.bot {
+            justify-content: flex-start;
+        }
+
+        .chat-message.user {
+            justify-content: flex-end;
+        }
+
+        .chat-message .bubble {
+            max-width: 60%;
+            padding: 10px;
+            border-radius: 10px;
+            background-color: #007bff;
+            color: white;
+        }
+
+        .chat-message.bot .bubble {
+            background-color: #e9ecef;
+            color: black;
+        }
+
+        .chat-footer {
+            display: flex;
+            padding: 10px;
+            background-color: #f1f1f1;
+        }
+
+        .chat-footer input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .chat-footer button {
+            margin-left: 10px;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .chat-footer button:hover {
+            background-color: #0056b3;
+        }
+
+        .chat-footer input[type="file"] {
+            display: none;
+        }
+
+        .file-label {
+            cursor: pointer;
+            margin-left: 10px;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .file-label:hover {
+            background-color: #0056b3;
+        }
+
+        /* New styles for image preview */
+        .image-preview {
+            max-width: 200px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="chat-container">
+        <div class="chat-header">Chatbot</div>
+        <div class="chat-history" id="chat-history"></div>
+        <div class="chat-footer">
+            <input type="text" id="message-input" placeholder="Type a message...">
+            <button id="send-button">Send</button>
+            <input type="file" accept="image/*" id="file-input">
+            <label class="file-label" for="file-input">Attach Image</label>
+        </div>
+    </div>
+
+    <script>
+        const chatHistory = document.getElementById('chat-history');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+        const fileInput = document.getElementById('file-input');
+
+        let lastMessageId = 0; // Track the last message ID globally
+
+        function addMessage(sender, text, error = null, isUserMessage = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('chat-message', sender);
+
+            if (text) {
+                const bubbleDiv = document.createElement('div');
+                bubbleDiv.classList.add('bubble');
+                bubbleDiv.textContent = text;
+                messageDiv.appendChild(bubbleDiv);
+            }
+
+            if (error && isUserMessage) {
+                const errorCaption = document.createElement('div');
+                errorCaption.style.color = 'red';
+                errorCaption.style.fontSize = '0.8em';
+                errorCaption.textContent = error;
+                messageDiv.appendChild(errorCaption);
+            }
+
+            chatHistory.appendChild(messageDiv);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        sendButton.addEventListener('click', async () => {
+            const text = messageInput.value.trim();
+            const file = fileInput.files[0];
+
+            if (text || file) {
+                if (file) {
+                    addMessage('user', `Uploading image: ${file.name}`, null, true);
+                } else {
+                    addMessage('user', text, null, true);
+                }
+
+                messageInput.value = '';
+                fileInput.value = '';
+
+                const formData = new FormData();
+                formData.append('to', 'bot');
+                if (text) formData.append('text', text);
+                if (file) formData.append('file', file);
+
+                try {
+                    const response = await fetch('/send', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const data = await response.json();
+                    if (data.ok) {
+                        if (file) {
+                            addMessage('user', `Image uploaded successfully: ${file.name}`, null, true);
+                        }
+                        addMessage('bot', data.response.text || 'Bot responded');
+                    } else {
+                        addMessage('user', null, 'Unable to send message', true);
+                    }
+                } catch (error) {
+                    addMessage('user', null, 'Failed to connect to server', true);
+                }
+            }
+        });
+
+        messageInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault(); // Prevent newline
+                sendButton.click(); // Trigger send button click
+            }
+        });
+
+        fileInput.addEventListener('change', () => {
+            const file = fileInput.files[0];
+            if (file) {
+                addMessage('user', `Selected image: ${file.name}`, null, true);
+
+                // Preview the selected image
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const imgPreview = document.createElement('img');
+                    imgPreview.src = e.target.result;
+                    imgPreview.alt = file.name;
+                    imgPreview.classList.add('image-preview');
+                    chatHistory.appendChild(imgPreview);
+                    chatHistory.scrollTop = chatHistory.scrollHeight;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        async function pollMessages() {
+            try {
+                const response = await fetch('/messages');
+                const data = await response.json();
+                if (data.ok) {
+                    data.items.forEach(msg => {
+                        if (msg.id > lastMessageId) { // Only add new messages
+                            addMessage(msg.from === 'bot' ? 'bot' : 'user', msg.text || `Sent an image: ${msg.file?.filename}`);
+                            lastMessageId = msg.id; // Update the last message ID
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to poll messages:', error);
+            }
+        }
+
+        // Poll messages every 5 seconds
+        setInterval(pollMessages, 5000);
+
+        // Initial poll
+        pollMessages();
+
+        // Initialize lastMessageId from existing messages on load
+        async function init() {
+            try {
+                const response = await fetch('/messages');
+                const data = await response.json();
+                if (data.ok && data.items.length > 0) {
+                    lastMessageId = Math.max(...data.items.map(m => m.id));
+                }
+            } catch (error) {
+                console.error('Init error:', error);
+            }
+        }
+
+        init();
+
+        // Clear chat history on page refresh
+        window.addEventListener('beforeunload', () => {
+            chatHistory.innerHTML = '';
+        });
+    </script>
+</body>
+
+</html>
