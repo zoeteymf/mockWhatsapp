@@ -5,127 +5,257 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chatbot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary-color: #007bff;
+            --primary-hover: #0056b3;
+            --bg-color: #f0f2f5;
+            --chat-bg: #ffffff;
+            --user-bubble-bg: #007bff;
+            --user-bubble-text: #ffffff;
+            --bot-bubble-bg: #f0f0f0;
+            --bot-bubble-text: #333333;
+            --border-color: #e0e0e0;
+        }
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Inter', sans-serif;
             margin: 0;
             padding: 0;
             display: flex;
-            flex-direction: column;
+            justify-content: center;
+            align-items: center;
             height: 100vh;
+            background-color: var(--bg-color);
         }
 
         .chat-container {
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            width: 100%;
+            max-width: 480px;
             height: 100%;
-            border: 1px solid #ccc;
+            max-height: 800px;
+            background-color: var(--chat-bg);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        @media (max-width: 480px) {
+            .chat-container {
+                max-width: 100%;
+                height: 100%;
+                border-radius: 0;
+            }
         }
 
         .chat-header {
-            background-color: #007bff;
-            color: white;
-            padding: 10px;
-            text-align: center;
+            background-color: var(--chat-bg);
+            color: #333;
+            padding: 15px 20px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
         .chat-history {
             flex: 1;
             overflow-y: auto;
-            padding: 10px;
-            background-color: #f9f9f9;
+            padding: 20px;
+            background-color: #fafafa;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
         .chat-message {
-            margin: 5px 0;
             display: flex;
-            align-items: flex-start;
+            flex-direction: column;
+            max-width: 75%;
         }
 
         .chat-message.bot {
-            justify-content: flex-start;
+            align-self: flex-start;
         }
 
         .chat-message.user {
-            justify-content: flex-end;
+            align-self: flex-end;
+            align-items: flex-end;
         }
 
         .chat-message .bubble {
-            max-width: 60%;
-            padding: 10px;
-            border-radius: 10px;
-            background-color: #007bff;
-            color: white;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            position: relative;
+            word-wrap: break-word;
         }
 
         .chat-message.bot .bubble {
-            background-color: #e9ecef;
-            color: black;
+            background-color: var(--bot-bubble-bg);
+            color: var(--bot-bubble-text);
+            border-bottom-left-radius: 4px;
+        }
+
+        .chat-message.user .bubble {
+            background-color: var(--user-bubble-bg);
+            color: var(--user-bubble-text);
+            border-bottom-right-radius: 4px;
         }
 
         .chat-footer {
+            padding: 15px;
+            background-color: var(--chat-bg);
+            border-top: 1px solid var(--border-color);
             display: flex;
-            padding: 10px;
-            background-color: #f1f1f1;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .preview-container {
+            display: none;
+            padding: 10px 15px;
+            background-color: #f8f9fa;
+            border-top: 1px solid var(--border-color);
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .preview-container img {
+            max-height: 80px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .preview-container button {
+            background: none;
+            border: none;
+            color: #dc3545;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+        
+        .preview-container button:hover {
+            background-color: rgba(220, 53, 69, 0.1);
+        }
+
+        .input-group {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            background-color: #f0f2f5;
+            border-radius: 24px;
+            padding: 5px 15px;
+            border: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+
+        .input-group:focus-within {
+            border-color: var(--primary-color);
+            background-color: #fff;
         }
 
         .chat-footer input[type="text"] {
             flex: 1;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-
-        .chat-footer button {
-            margin-left: 10px;
-            padding: 10px;
-            background-color: #007bff;
-            color: white;
             border: none;
-            border-radius: 5px;
-            cursor: pointer;
+            background: none;
+            padding: 10px 5px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            outline: none;
         }
 
-        .chat-footer button:hover {
-            background-color: #0056b3;
+        .icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #6c757d;
+            padding: 8px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .icon-btn:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+            color: var(--primary-color);
+        }
+
+        .icon-btn.send {
+            color: var(--primary-color);
+        }
+        
+        .icon-btn.send:hover {
+            background-color: var(--primary-color);
+            color: white;
         }
 
         .chat-footer input[type="file"] {
             display: none;
         }
 
-        .file-label {
-            cursor: pointer;
-            margin-left: 10px;
-            padding: 10px;
-            background-color: #007bff;
-            color: white;
-            border-radius: 5px;
-            text-align: center;
-        }
-
-        .file-label:hover {
-            background-color: #0056b3;
-        }
-
-        /* New styles for image preview */
         .image-preview {
-            max-width: 200px;
-            margin-top: 10px;
+            max-width: 100%;
+            border-radius: 12px;
+            margin-bottom: 5px;
+        }
+        
+        /* Scrollbar styling */
+        .chat-history::-webkit-scrollbar {
+            width: 6px;
+        }
+        .chat-history::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .chat-history::-webkit-scrollbar-thumb {
+            background-color: rgba(0,0,0,0.2);
+            border-radius: 3px;
         }
     </style>
 </head>
 
 <body>
     <div class="chat-container">
-        <div class="chat-header">Chatbot</div>
+        <div class="chat-header">
+            <span>Chatbot</span>
+            <span style="font-size: 0.8em; font-weight: 400; color: #666;">Online</span>
+        </div>
         <div class="chat-history" id="chat-history"></div>
+        <div class="preview-container" id="preview-container">
+            <img id="preview-image" src="" alt="Image Preview">
+            <button id="clear-preview" title="Remove image">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
         <div class="chat-footer">
-            <input type="text" id="message-input" placeholder="Type a message...">
-            <button id="send-button">Send</button>
             <input type="file" accept="image/*" id="file-input">
-            <label class="file-label" for="file-input">Attach Image</label>
+            <button class="icon-btn" id="attach-btn" title="Attach image">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                </svg>
+            </button>
+            <div class="input-group">
+                <input type="text" id="message-input" placeholder="Type a message...">
+            </div>
+            <button class="icon-btn send" id="send-button" title="Send">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+            </button>
         </div>
     </div>
 
@@ -134,19 +264,41 @@
         const messageInput = document.getElementById('message-input');
         const sendButton = document.getElementById('send-button');
         const fileInput = document.getElementById('file-input');
+        const attachButton = document.getElementById('attach-btn');
+        const previewContainer = document.getElementById('preview-container');
+        const previewImage = document.getElementById('preview-image');
+        const clearPreviewButton = document.getElementById('clear-preview');
+
+        // Trigger file input when attach button is clicked
+        attachButton.addEventListener('click', () => {
+            fileInput.click();
+        });
 
         let lastMessageId = 0; // Track the last message ID globally
 
-        function addMessage(sender, text, error = null, isUserMessage = false) {
+        function addMessage(sender, text, error = null, isUserMessage = false, imageUrl = null) {
             const messageDiv = document.createElement('div');
             messageDiv.classList.add('chat-message', sender);
+
+            const contentDiv = document.createElement('div');
+            contentDiv.style.display = 'flex';
+            contentDiv.style.flexDirection = 'column';
+            
+            if (imageUrl) {
+                const img = document.createElement('img');
+                img.src = imageUrl;
+                img.classList.add('image-preview');
+                contentDiv.appendChild(img);
+            }
 
             if (text) {
                 const bubbleDiv = document.createElement('div');
                 bubbleDiv.classList.add('bubble');
                 bubbleDiv.textContent = text;
-                messageDiv.appendChild(bubbleDiv);
+                contentDiv.appendChild(bubbleDiv);
             }
+            
+            messageDiv.appendChild(contentDiv);
 
             if (error && isUserMessage) {
                 const errorCaption = document.createElement('div');
@@ -160,22 +312,30 @@
             chatHistory.scrollTop = chatHistory.scrollHeight;
         }
 
+        clearPreviewButton.addEventListener('click', () => {
+            fileInput.value = '';
+            previewContainer.style.display = 'none';
+            previewImage.src = '';
+        });
+
         sendButton.addEventListener('click', async () => {
             const text = messageInput.value.trim();
             const file = fileInput.files[0];
 
             if (text || file) {
-                if (file) {
-                    addMessage('user', `Uploading image: ${file.name}`, null, true);
-                } else {
-                    addMessage('user', text, null, true);
-                }
+                // Add message to UI immediately
+                const imageUrl = file ? previewImage.src : null;
+                addMessage('user', text, null, true, imageUrl);
 
+                // Clear inputs
                 messageInput.value = '';
                 fileInput.value = '';
+                previewContainer.style.display = 'none';
+                previewImage.src = '';
 
                 const formData = new FormData();
                 formData.append('to', 'bot');
+                formData.append('user_id', '60123456789'); // Default user ID
                 if (text) formData.append('text', text);
                 if (file) formData.append('file', file);
 
@@ -187,10 +347,7 @@
 
                     const data = await response.json();
                     if (data.ok) {
-                        if (file) {
-                            addMessage('user', `Image uploaded successfully: ${file.name}`, null, true);
-                        }
-                        addMessage('bot', data.response.text || 'Bot responded');
+                        // Bot response handled by polling
                     } else {
                         addMessage('user', null, 'Unable to send message', true);
                     }
@@ -210,17 +367,10 @@
         fileInput.addEventListener('change', () => {
             const file = fileInput.files[0];
             if (file) {
-                addMessage('user', `Selected image: ${file.name}`, null, true);
-
-                // Preview the selected image
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    const imgPreview = document.createElement('img');
-                    imgPreview.src = e.target.result;
-                    imgPreview.alt = file.name;
-                    imgPreview.classList.add('image-preview');
-                    chatHistory.appendChild(imgPreview);
-                    chatHistory.scrollTop = chatHistory.scrollHeight;
+                    previewImage.src = e.target.result;
+                    previewContainer.style.display = 'flex';
                 };
                 reader.readAsDataURL(file);
             }
@@ -233,7 +383,17 @@
                 if (data.ok) {
                     data.items.forEach(msg => {
                         if (msg.id > lastMessageId) { // Only add new messages
-                            addMessage(msg.from === 'bot' ? 'bot' : 'user', msg.text || `Sent an image: ${msg.file?.filename}`);
+                            // If it's a bot message, add it.
+                            if (msg.from === 'bot') {
+                                addMessage('bot', msg.text);
+                            } else {
+                                // For user messages coming from webhook, we might want to display them if they are not ours?
+                                // But for now, let's just display them as text if they have text.
+                                // If they have file, we don't have the file URL easily unless we serve it.
+                                // The backend doesn't seem to serve uploaded files back via /messages API in a usable way (it sends file object).
+                                // So let's just show text for now.
+                                // addMessage('user', msg.text || `Sent an image: ${msg.file?.filename}`);
+                            }
                             lastMessageId = msg.id; // Update the last message ID
                         }
                     });

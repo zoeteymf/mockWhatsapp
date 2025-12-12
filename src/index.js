@@ -4,6 +4,8 @@ import axios from 'axios';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import multer from 'multer';
+import fs from 'fs';
+
 
 dotenv.config();
 
@@ -39,35 +41,45 @@ app.get('/health', (req, res) => {
   res.json({ ok: true, service: 'mock-whatsapp-bot' });
 });
 
-// Serve UI
-app.use('/', express.static(path.join(__dirname, '..', 'public')));
-
 // Serve chat.html as the default page
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'chat.html'));
 });
 
+// Serve UI
+app.use('/', express.static(path.join(__dirname, '..', 'public')));
+
+
+
 // Send message to n8n webhook
-// POST /send { to: string, text?: string, file?: object, meta?: object }
+// POST /send { to: string, user_id?: string, text?: string, file?: object, meta?: object }
 app.post('/send', upload.single('file'), async (req, res) => {
   if (!N8N_WEBHOOK_URL) {
     return res.status(400).json({ error: 'N8N_WEBHOOK_URL not configured' });
   }
-  const { to, text } = req.body || {};
+  const { to, user_id, text } = req.body || {};
   const file = req.file;
   if (!to || (!text && !file)) {
     return res.status(400).json({ error: 'Missing "to" and either "text" or "file"' });
   }
   try {
-    const payload = {
-      direction: 'outbound',
-      channel: 'whatsapp',
-      to,
-      text,
-      file: file ? { filename: file.originalname, path: file.path } : undefined
-    };
-    const { data, status } = await axios.post(N8N_WEBHOOK_URL, payload, {
-      headers: { 'Content-Type': 'application/json' },
+    const formData = new FormData();
+    formData.append('direction', 'outbound');
+    formData.append('channel', 'whatsapp');
+    formData.append('to', to);
+    formData.append('user_id', user_id || 'anonymous');
+    if (text) formData.append('text', text);
+
+    if (file) {
+      const fileBuffer = await fs.promises.readFile(file.path);
+      const blob = new Blob([fileBuffer], { type: file.mimetype });
+      formData.append('file', blob, file.originalname);
+      // Also send file info as fields
+      formData.append('file_path', file.path);
+      formData.append('file_name', file.originalname);
+    }
+
+    const { data, status } = await axios.post(N8N_WEBHOOK_URL, formData, {
       timeout: 10000
     });
     res.status(200).json({ ok: true, status, response: data });
@@ -94,7 +106,7 @@ app.post('/webhook', async (req, res) => {
   // Store inbound message for UI polling
   inboundMessages.push({
     id: Date.now(),
-    from: 'bot',
+    from: from, // Use the actual 'from' value from webhook
     text,
     file,
     meta: meta || {},
